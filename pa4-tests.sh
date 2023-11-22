@@ -21,6 +21,7 @@ else
     NC='\033[0m'
 fi
 
+SCORE=0
 
 remake
 #echo -e "\nTest cases for datapoint transfers"
@@ -29,10 +30,11 @@ echo -e "\nTesting :: ./server -r 8080 & ./client -a 127.0.0.1 -r 8080 -n 1000 -
 N=1000
 P=5
 ./server -r 8080 >/dev/null &
-sleep 1
+sleep 5
 ./client -a 127.0.0.1 -r 8080 -n ${N} -p ${P} -w 100 -h 20 -b 5 >out.tst
 if [ $(comm -12 <(sort out.tst) <(sort test-files/data1.txt) | wc -l) -eq $(cat test-files/data1.txt | wc -l) ]; then
     echo -e "  ${GREEN}Test One Passed${NC}"
+    SCORE=$(($SCORE+20))
 else
     echo -e "  ${RED}Failed${NC}"
 fi
@@ -43,10 +45,11 @@ echo -e "\nTesting :: ./server -r 8081 & ./client -a 127.0.0.2 -r 8081 -n 10000 
 N=10000
 P=10
 ./server -r 8081 >/dev/null &
-sleep 1
+sleep 5
 ./client -a 127.0.0.2 -r 8081 -n ${N} -p ${P} -w 100 -h 20 -b 30 >out.tst
 if [ $(comm -12 <(sort out.tst) <(sort test-files/data2.txt) | wc -l) -eq $(cat test-files/data2.txt | wc -l) ]; then
     echo -e "  ${GREEN}Test Two Passed${NC}"
+    SCORE=$(($SCORE+20))
 else
     echo -e "  ${RED}Failed${NC}"
 fi
@@ -59,11 +62,12 @@ remake
 
 echo -e "\nTesting :: ./server -r 8082 & ./client -a 127.0.0.1 -r 8082 -w 100 -b 30 -f 1.csv; diff -sqwB BIMDC/1.csv received/1.csv\n"
 ./server -r 8082 >/dev/null &
-sleep 1
+sleep 10
 ./client -a 127.0.0.3 -r 8082 -w 100 -b 30 -f 1.csv >/dev/null
 if test -f "received/1.csv"; then
     if diff BIMDC/1.csv received/1.csv >/dev/null; then
         echo -e "  ${GREEN}Test Three Passed${NC}"
+        SCORE=$(($SCORE+20))
     else
         echo -e "  ${RED}Failed${NC}"
     fi
@@ -80,11 +84,12 @@ remake
 echo -e "\nTesting :: ./server -r 8083 & truncate -s 256K BIMDC/test.bin; ./client -a 127.0.0.1 -r 8083 -w 100 -b 50 -f test.bin; diff -sqwB BIMDC/test.bin received/test.bin\n"
 truncate -s 256K BIMDC/test.bin
 ./server -r 8083 >/dev/null &
-sleep 1
+sleep 10
 ./client -a 127.0.0.4 -r 8083 -w 100 -b 50 -f test.bin >/dev/null
 if test -f "received/test.bin"; then
     if diff BIMDC/test.bin received/test.bin >/dev/null; then
         echo -e "  ${GREEN}Test Four Passed${NC}"
+        SCORE=$(($SCORE+20))
     else
         echo -e "  ${RED}Failed${NC}"
     fi
@@ -97,11 +102,12 @@ wait $! 2>/dev/null
 echo -e "\nTesting :: ./server -r 8084 -m 4096 & truncate -s 256K BIMDC/test.bin; ./client -a 127.0.0.1 -r 8084 -w 100 -b 50 -m 4096 -f test.bin; diff -sqwB BIMDC/test.bin received/test.bin\n"
 truncate -s 256K BIMDC/test.bin
 ./server -r 8085 -m 4096 >/dev/null &
-sleep 1
+sleep 10
 ./client -a 127.0.0.5 -r 8085 -w 100 -b 50 -m 4096 -f test.bin >/dev/null
 if test -f "received/test.bin"; then
     if diff BIMDC/test.bin received/test.bin >/dev/null; then
         echo -e "  ${GREEN}Test Five Passed${NC}"
+        SCORE=$(($SCORE+20))
     else
         echo -e "  ${RED}Failed${NC}"
     fi
@@ -110,6 +116,8 @@ else
 fi
 kill $! 2>/dev/null
 wait $! 2>/dev/null
+
+echo -e "\nSCORE: ${SCORE}/100\n"
 
 echo -e "\n"
 exit 0
